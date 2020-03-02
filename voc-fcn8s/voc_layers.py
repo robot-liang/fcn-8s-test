@@ -5,6 +5,7 @@ from PIL import Image
 
 import random
 
+
 class VOCSegDataLayer(caffe.Layer):
     """
     Load (input image, label image) pairs from PASCAL VOC
@@ -47,8 +48,8 @@ class VOCSegDataLayer(caffe.Layer):
             raise Exception("Do not define a bottom.")
 
         # load indices for images and labels
-        split_f  = '{}/ImageSets/Segmentation/{}.txt'.format(self.voc_dir,
-                self.split)
+        split_f = '{}/{}.txt'.format(self.voc_dir,
+                                     self.split)
         self.indices = open(split_f, 'r').read().splitlines()
         self.idx = 0
 
@@ -59,8 +60,7 @@ class VOCSegDataLayer(caffe.Layer):
         # randomization: seed and pick
         if self.random:
             random.seed(self.seed)
-            self.idx = random.randint(0, len(self.indices)-1)
-
+            self.idx = random.randint(0, len(self.indices) - 1)
 
     def reshape(self, bottom, top):
         # load image + label image pair
@@ -70,7 +70,6 @@ class VOCSegDataLayer(caffe.Layer):
         top[0].reshape(1, *self.data.shape)
         top[1].reshape(1, *self.label.shape)
 
-
     def forward(self, bottom, top):
         # assign output
         top[0].data[...] = self.data
@@ -78,16 +77,14 @@ class VOCSegDataLayer(caffe.Layer):
 
         # pick next input
         if self.random:
-            self.idx = random.randint(0, len(self.indices)-1)
+            self.idx = random.randint(0, len(self.indices) - 1)
         else:
             self.idx += 1
             if self.idx == len(self.indices):
                 self.idx = 0
 
-
     def backward(self, top, propagate_down, bottom):
         pass
-
 
     def load_image(self, idx):
         """
@@ -97,20 +94,19 @@ class VOCSegDataLayer(caffe.Layer):
         - subtract mean
         - transpose to channel x height x width order
         """
-        im = Image.open('{}/JPEGImages/{}.jpg'.format(self.voc_dir, idx))
+        im = Image.open('{}/val/images/{}.jpg'.format(self.voc_dir, idx))
         in_ = np.array(im, dtype=np.float32)
-        in_ = in_[:,:,::-1]
+        in_ = in_[:, :, ::-1]
         in_ -= self.mean
-        in_ = in_.transpose((2,0,1))
+        in_ = in_.transpose((2, 0, 1))
         return in_
-
 
     def load_label(self, idx):
         """
         Load label image as 1 x height x width integer array of label indices.
         The leading singleton dimension is required by the loss.
         """
-        im = Image.open('{}/SegmentationClass/{}.png'.format(self.voc_dir, idx))
+        im = Image.open('{}/val/labels/{}.png'.format(self.voc_dir, idx))
         label = np.array(im, dtype=np.uint8)
         label = label[np.newaxis, ...]
         return label
@@ -162,8 +158,8 @@ class SBDDSegDataLayer(caffe.Layer):
             raise Exception("Do not define a bottom.")
 
         # load indices for images and labels
-        split_f  = '{}/{}.txt'.format(self.sbdd_dir,
-                self.split)
+        split_f = '{}/{}.txt'.format(self.sbdd_dir,
+                                     self.split)
         self.indices = open(split_f, 'r').read().splitlines()
         self.idx = 0
 
@@ -174,8 +170,7 @@ class SBDDSegDataLayer(caffe.Layer):
         # randomization: seed and pick
         if self.random:
             random.seed(self.seed)
-            self.idx = random.randint(0, len(self.indices)-1)
-
+            self.idx = random.randint(0, len(self.indices) - 1)
 
     def reshape(self, bottom, top):
         # load image + label image pair
@@ -185,7 +180,6 @@ class SBDDSegDataLayer(caffe.Layer):
         top[0].reshape(1, *self.data.shape)
         top[1].reshape(1, *self.label.shape)
 
-
     def forward(self, bottom, top):
         # assign output
         top[0].data[...] = self.data
@@ -193,16 +187,14 @@ class SBDDSegDataLayer(caffe.Layer):
 
         # pick next input
         if self.random:
-            self.idx = random.randint(0, len(self.indices)-1)
+            self.idx = random.randint(0, len(self.indices) - 1)
         else:
             self.idx += 1
             if self.idx == len(self.indices):
                 self.idx = 0
 
-
     def backward(self, top, propagate_down, bottom):
         pass
-
 
     def load_image(self, idx):
         """
@@ -212,21 +204,26 @@ class SBDDSegDataLayer(caffe.Layer):
         - subtract mean
         - transpose to channel x height x width order
         """
-        im = Image.open('{}/img/{}.jpg'.format(self.sbdd_dir, idx))
+        im = Image.open('{}/train/images/{}.jpg'.format(self.sbdd_dir, idx))
         in_ = np.array(im, dtype=np.float32)
-        in_ = in_[:,:,::-1]
+        in_ = in_[:, :, ::-1]
         in_ -= self.mean
-        in_ = in_.transpose((2,0,1))
+        in_ = in_.transpose((2, 0, 1))
         return in_
 
-
     def load_label(self, idx):
-        """
-        Load label image as 1 x height x width integer array of label indices.
-        The leading singleton dimension is required by the loss.
-        """
-        import scipy.io
-        mat = scipy.io.loadmat('{}/cls/{}.mat'.format(self.sbdd_dir, idx))
-        label = mat['GTcls'][0]['Segmentation'][0].astype(np.uint8)
+        im = Image.open('{}/train/labels/{}.png'.format(self.sbdd_dir, idx))
+        label = np.array(im, dtype=np.uint8)
         label = label[np.newaxis, ...]
         return label
+
+#    def load_label(self, idx):
+#        """
+#        Load label image as 1 x height x width integer array of label indices.
+#        The leading singleton dimension is required by the loss.
+#        """
+#        import scipy.io
+#        mat = scipy.io.loadmat('{}/train/labels/{}.png'.format(self.sbdd_dir, idx))
+#        label = mat['GTcls'][0]['Segmentation'][0].astype(np.uint8)
+#        label = label[np.newaxis, ...]
+#        return label
